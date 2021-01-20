@@ -1,7 +1,7 @@
 const getHistory = (socket, messageModel) => async () => {
   try {
     const messages = await messageModel.getGeneral();
-
+    console.log(messages)
     const history = await messages.map(({ chatMessage, date, nickname }) => `${date} - ${nickname}: ${chatMessage}`);
 
     socket.emit('history', history);

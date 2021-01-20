@@ -54,6 +54,7 @@ async function start() {
   app.get('/', async (_req, res) => {
     const usersOnline = models.userModel.getAllOnlineUsers();
     const getAll = await models.messageModel.getGeneral();
+    console.log(getAll)
     const messages = await getAll.map(
       ({ nickname, date, chatMessage }) => `${nickname} ${date} ${chatMessage}`,
     );

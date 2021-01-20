@@ -113,6 +113,7 @@ const createChatMessage = (message, dm) => {
 
 socket.on('history', (data) => {
   messages.innerHTML = ''
+  console.log(data)
   data.forEach((message) => createChatMessage(message));
 });
 
@@ -145,15 +146,16 @@ chatBtn.addEventListener('submit', (e) => {
     chatMessage,
     nickname,
   };
-  const currentPrivate = chattingWithElement.innerHTML;
-  if(currentPrivate) {
+  const currentPrivate = chattingWithElement.innerText;
+  if(currentPrivate && currentPrivate !== nickname) {
     const message = formatMsg(chatMessage);
     createChatMessage(message)
     return socket.emit('private', { 
       users: { receiver: currentPrivate, sender: nickname }, chatMessage });
-  } 
-  socket.emit('message', message);
-  messageInput.value = '';
+  } else {
+    socket.emit('message', message);
+    messageInput.value = '';
+  }
 });
 
 publicChatButton.onclick = (message) => socket.emit('get-pub-history');
@@ -172,14 +174,14 @@ const clientFirst = (users) => {
   return newList
 }
 
-const createPrivButton = () => {
+const createPrivButton = (name) => {
   const btn = document.createElement('button');
   btn.setAttribute('data-testid', 'private');
   btn.innerText = 'Chat with me';
   btn.onclick = () => {
-    chattingWithElement.innerText = nickname;
+    chattingWithElement.innerText = name;
     messages.innerHTML = '';
-    socket.emit('get-pv-history', [nickname, nameHolder.innerHTML])
+    socket.emit('get-pv-history', [name, nameHolder.innerHTML])
   }
   return btn;
 }
@@ -194,7 +196,7 @@ socket.on('online', (users) => {
     p.setAttribute('data-testid','online-user');
     p.innerText = nickname;
     li.appendChild(p);
-    const btn = createPrivButton() 
+    const btn = createPrivButton(nickname) 
     li.appendChild(btn)
     ul.appendChild(li)
 

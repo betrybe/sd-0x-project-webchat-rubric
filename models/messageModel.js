@@ -1,4 +1,4 @@
-const getGeneral = (db) => () => db.collection('messages').find({ user: { $exists: 0 } }).sort({ date: 1 }).toArray();
+const getGeneral = (db) => () => db.collection('messages').find({ users: { $exists: 0 } }).sort({ date: 1 }).toArray();
 
 const getPrivate = (db) => (users) => db.collection('messages').findOne({ users: { $all: users } });
 
