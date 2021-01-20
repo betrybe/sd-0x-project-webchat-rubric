@@ -35,12 +35,15 @@ const sendMessage = (io, messageModel) => async (req) => {
 };
 
 const getPrivate = (socket, messageModel) => async (req) => {
+  console.log('get', req)
   const data = await messageModel.getPrivate(req);
   socket.emit('history', data ? data.messages : []);
 };
 
 const insertPrivate = (io, messageModel, onlineUsers) => async ({ users, chatMessage }) => {
-  const socketReceiver = onlineUsers.find((el) => el.nickname === users.receiver);
+  console.log('insert', users, chatMessage)
+  console.log(onlineUsers)
+  const socketReceiver = onlineUsers().find((el) => el.nickname === users.receiver);
   const message = `${date} ${time} - ${users.sender}: ${chatMessage}`;
 
   await messageModel.insertPrivate({

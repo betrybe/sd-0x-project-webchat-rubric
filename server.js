@@ -26,7 +26,7 @@ const PORT = 3000;
 
 const initSocket = (socket, models) => {
   const userController = getUserController(io, socket, models.userModel);
-  const onlineUsers = models.userModel.getAllOnlineUsers();
+  const onlineUsers = models.userModel.getAllOnlineUsers;
   const messageController = getMessageController(io, models.messageModel, socket, onlineUsers);
 
   socket.on('get-pub-history', messageController.getHistory);

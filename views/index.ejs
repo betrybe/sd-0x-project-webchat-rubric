@@ -73,7 +73,7 @@
         <%  })%>
     </ul>
     <ul id="messages">
-      <% messages && messages.forEach(message => { console.log(message) %>
+      <% messages && messages.forEach(message => { %>
         <li>
           <p data-testid="message"><%= message %></p>
         </li>
@@ -165,12 +165,14 @@ socket.on('dm', (message) => createChatMessage(message, 'dm'));
 socket.on('message', (message) => createChatMessage(message));
 
 socket.on('online', (users) => {
-  console.log(users)
+  const client = users.find(u => u.nickname === nickname)
+  const newList = users.filter(u => u.nickname !== nickname)
+  newList.unshift(client)
   const ul = document.createElement('ul');
-  users.forEach(({ nickname, id }) => {
+  newList.forEach(({ nickname, id }) => {
     // if(nickname !== nameHolder.innerText){
 
-    const p = document.createElement('li');
+    const p = document.createElement('p');
     p.setAttribute('data-testid','online-user');
     p.innerText = nickname;
     
