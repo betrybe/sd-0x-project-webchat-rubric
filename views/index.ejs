@@ -100,10 +100,6 @@ const publicChatButton = document.getElementById('public-chat');
 
 const socket = io(); 
 
-publicChatButton.onclick = (message) => {
-  socket.emit('get-pub-history');
-}
-
 const createChatMessage = (message, dm) => {
   const li = document.createElement('li');
   const dmFlag = `(DM) ${message}`;
@@ -128,16 +124,19 @@ const nameHolder = document.querySelector('#nickname');
 nameHolder.innerHTML = nickname;
 
 sendButton.onclick = () => {
-  console.log('nicknameElement.value:', nicknameElement)
   const oldNickname = nickname;
   nickname = nicknameElement.value;
   nameHolder.innerText = nicknameElement.value;
-  console.log('nickname:', nickname)
-  console.log('oldnickname:', oldNickname)
   socket.emit('userChangeName', { nickname: oldNickname, newName: nickname })
 };
 
 const chatBtn = document.querySelector('form');
+
+const formatMsg = (chatMessage) => {
+  const date = `${new Date().getUTCDate()}-${new Date().getMonth()}-${new Date().getFullYear()}`;
+  const time = new Date().toLocaleTimeString('pt-BR');
+  return `${date} ${time} - ${nickname}: ${chatMessage}`;
+}
 
 chatBtn.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -148,15 +147,17 @@ chatBtn.addEventListener('submit', (e) => {
   };
   const currentPrivate = chattingWithElement.innerHTML;
   if(currentPrivate) {
-    const date = `${new Date().getUTCDate()}-${new Date().getMonth()}-${new Date().getFullYear()}`;
-    const time = new Date().toLocaleTimeString('pt-BR');
-    const message = `${date} ${time} - ${nickname}: ${chatMessage}`;
+    const message = formatMsg(chatMessage);
     createChatMessage(message)
-    return socket.emit('private', { users: { receiver: currentPrivate, sender: nickname }, chatMessage });
+    return socket.emit('private', { 
+      users: { receiver: currentPrivate, sender: nickname }, chatMessage });
   } 
   socket.emit('message', message);
   messageInput.value = '';
 });
+
+publicChatButton.onclick = (message) => socket.emit('get-pub-history');
+
 
 const private = document.getElementById('private-btn');
 
@@ -164,34 +165,38 @@ socket.on('dm', (message) => createChatMessage(message, 'dm'));
 
 socket.on('message', (message) => createChatMessage(message));
 
-socket.on('online', (users) => {
+const clientFirst = (users) => {
   const client = users.find(u => u.nickname === nickname)
   const newList = users.filter(u => u.nickname !== nickname)
   newList.unshift(client)
-  const ul = document.createElement('ul');
-  newList.forEach(({ nickname, id }) => {
-    // if(nickname !== nameHolder.innerText){
+  return newList
+}
 
+const createPrivButton = () => {
+  const btn = document.createElement('button');
+  btn.setAttribute('data-testid', 'private');
+  btn.innerText = 'Chat with me';
+  btn.onclick = () => {
+    chattingWithElement.innerText = nickname;
+    messages.innerHTML = '';
+    socket.emit('get-pv-history', [nickname, nameHolder.innerHTML])
+  }
+  return btn;
+}
+
+socket.on('online', (users) => {
+  const ul = document.createElement('ul');
+
+  clientFirst(users).forEach(({ nickname, id }) => {
+
+    const li = document.createElement('li');
     const p = document.createElement('p');
     p.setAttribute('data-testid','online-user');
     p.innerText = nickname;
-    
-    const li = document.createElement('li');
-
     li.appendChild(p);
-    const btn = document.createElement('button');
-    btn.setAttribute('data-testid', 'private');
-    btn.innerText = 'Chat with me';
-    btn.onclick = () => {
-      chattingWithElement.innerText = nickname;
-      // clear pub_history and create private history
-      messages.innerHTML = '';
-      socket.emit('get-pv-history', [nickname, nameHolder.innerHTML])
-    }
-    // btn.disabled = id !== socket.id
+    const btn = createPrivButton() 
     li.appendChild(btn)
-    ul.appendChild(li) 
-  // }
+    ul.appendChild(li)
 
   })
   usersOnlineElement.innerHTML = '';
