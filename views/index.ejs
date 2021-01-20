@@ -48,7 +48,7 @@
     <div id='container'>
     <div>
       <h3 id='nickname'></h3>
-      <input type="text" name="" id="nickname", data-testid="nickname-box">
+      <input type="text" id="nickname-input", data-testid="nickname-box">
       <button 
       type="button"  
       data-testid="nickname-save"
@@ -92,7 +92,7 @@
 const messageInput = document.getElementById('messageInput');
 const messages = document.getElementById('messages');
 const sendButton = document.getElementById('sendButton');
-const nicknameElement = document.getElementById('nickname');
+const nicknameElement = document.getElementById('nickname-input');
 const usersOnlineElement = document.getElementById('usersOnline');
 const chattingWithElement = document.getElementById('chat');
 
@@ -106,10 +106,10 @@ publicChatButton.onclick = (message) => {
 
 const createChatMessage = (message, dm) => {
   const li = document.createElement('li');
-  const dmFlag = '(DM)';
-  console.log(message)
+  const dmFlag = `(DM) ${message}`;
+  
   li.setAttribute('data-testid', 'message');
-  li.innerHTML = `<p className='message'>${dm ? ` ${dmFlag} ${message}` : message}</p>`;
+  li.innerHTML = `<p className='message'>${dm ?  dmFlag : message}</p>`;
 
   messages.appendChild(li);
 };
@@ -128,10 +128,12 @@ const nameHolder = document.querySelector('#nickname');
 nameHolder.innerHTML = nickname;
 
 sendButton.onclick = () => {
+  console.log('nicknameElement.value:', nicknameElement)
   const oldNickname = nickname;
   nickname = nicknameElement.value;
-  nameHolder.innerHTML = nicknameElement.value;
-
+  nameHolder.innerText = nicknameElement.value;
+  console.log('nickname:', nickname)
+  console.log('oldnickname:', oldNickname)
   socket.emit('userChangeName', { nickname: oldNickname, newName: nickname })
 };
 
@@ -144,7 +146,7 @@ chatBtn.addEventListener('submit', (e) => {
     chatMessage,
     nickname,
   };
-  const currentPrivate = chattingWithElement.innerHTML
+  const currentPrivate = chattingWithElement.innerHTML;
   if(currentPrivate) {
     const date = `${new Date().getUTCDate()}-${new Date().getMonth()}-${new Date().getFullYear()}`;
     const time = new Date().toLocaleTimeString('pt-BR');
@@ -166,7 +168,7 @@ socket.on('online', (users) => {
   console.log(users)
   const ul = document.createElement('ul');
   users.forEach(({ nickname, id }) => {
-    if(nickname !== nameHolder.innerText){
+    // if(nickname !== nameHolder.innerText){
 
     const p = document.createElement('li');
     p.setAttribute('data-testid','online-user');
@@ -187,7 +189,7 @@ socket.on('online', (users) => {
     // btn.disabled = id !== socket.id
     li.appendChild(btn)
     ul.appendChild(li) 
-  }
+  // }
 
   })
   usersOnlineElement.innerHTML = '';

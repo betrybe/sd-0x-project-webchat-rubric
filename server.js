@@ -53,12 +53,10 @@ async function start() {
 
   app.get('/', async (_req, res) => {
     const usersOnline = models.userModel.getAllOnlineUsers();
-    console.log(usersOnline);
     const getAll = await models.messageModel.getGeneral();
     const messages = await getAll.map(
       ({ nickname, date, chatMessage }) => `${nickname} ${date} ${chatMessage}`,
     );
-    console.log('oi?', messages);
     res.render('index', { usersOnline, messages });
   });
 

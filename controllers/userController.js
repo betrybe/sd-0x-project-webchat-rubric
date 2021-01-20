@@ -11,8 +11,7 @@ const updateName = (io, socket, userModel) =>
 
       userModel.updateUser(nickname, newName);
       const onlineUsers = userModel.getAllOnlineUsers();
-      /*       const user = onlineUsers.find(({ socketId }) => socketId === socket.id);
- */
+
       socket.emit('userChangeName', { newName });
       socket.broadcast.emit('someone-change-name', { nickname, newName });
 
