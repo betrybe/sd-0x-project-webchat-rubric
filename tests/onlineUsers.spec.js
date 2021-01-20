@@ -148,6 +148,7 @@ describe('Informe a todos os clientes quem está online no momento', () => {
     await page.waitForTimeout(1000);
     await nicknameBox.type(nickname);
     await nicknameSave.click();
+
     const response = await axios.get('http://localhost:3000/');
     const $ = cheerio.load(response.data);
     const onlineUserPosition = $('[data-testid="online-user"]').length - 1;

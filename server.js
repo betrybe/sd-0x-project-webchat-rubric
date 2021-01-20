@@ -25,12 +25,16 @@ const io = socketIo(httpServer,
 const PORT = 3000;
 
 const initSocket = (socket, models) => {
-  const messageController = getMessageController(io, models.messageModel);
   const userController = getUserController(io, socket, models.userModel);
+  const onlineUsers = models.userModel.getAllOnlineUsers();
+  const messageController = getMessageController(io, models.messageModel, socket, onlineUsers);
 
+  socket.on('get-pub-history', messageController.getHistory);
+  socket.on('get-pv-history', messageController.getPrivate);
   socket.on('userChangeName', userController.updateName);
   socket.on('userConn', userController.saveUser);
   socket.on('usersOnline', models.userModel.getAllOnlineUsers);
+  socket.on('private', messageController.insertPrivate);
   socket.on('message', messageController.sendMessage);
   socket.on('disconnect', userController.removeUser);
 };

@@ -45,8 +45,9 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>
   <body>
-    <div id='contaner'>
+    <div id='container'>
     <div>
+      <h3 id='nickname'></h3>
       <input type="text" name="" id="nickname", data-testid="nickname-box">
       <button 
       type="button"  
@@ -68,7 +69,6 @@
       <% usersOnline && usersOnline.forEach(user => { %>
         <li>
           <p data-testid="online-user"><%= user.nickname %></p>
-          <button>Chat</button>
         </li>
         <%  })%>
     </ul>
@@ -100,55 +100,65 @@ const publicChatButton = document.getElementById('public-chat');
 
 const socket = io(); 
 
-// publicChatButton.onclick = (message) =>{
-//   socket.emit('send-message', message);
-//   messages.innerHTML = '';
-// }
+publicChatButton.onclick = (message) => {
+  socket.emit('get-pub-history');
+}
 
-const createChatMessage = (message) => {
+const createChatMessage = (message, dm) => {
   const li = document.createElement('li');
+  const dmFlag = '(DM)';
   console.log(message)
-
   li.setAttribute('data-testid', 'message');
-  li.innerHTML = `
-    <p className='message'>${message}</p>
-  `;
+  li.innerHTML = `<p className='message'>${dm ? ` ${dmFlag} ${message}` : message}</p>`;
 
   messages.appendChild(li);
 };
 
 
-socket.on('history', (messages) => {
-  console.log(messages)
-  messages.forEach((message) => createChatMessage(message));
+socket.on('history', (data) => {
+  messages.innerHTML = ''
+  data.forEach((message) => createChatMessage(message));
 });
 
 let nickname = `Guest ${Math.random().toString().split('.')[1]}`
 
 socket.emit('userConn', nickname)
 
+const nameHolder = document.querySelector('#nickname');
+nameHolder.innerHTML = nickname;
+
 sendButton.onclick = () => {
   const oldNickname = nickname;
   nickname = nicknameElement.value;
+  nameHolder.innerHTML = nicknameElement.value;
 
   socket.emit('userChangeName', { nickname: oldNickname, newName: nickname })
 };
 
-const generalChatBtn = document.querySelector('form');
+const chatBtn = document.querySelector('form');
 
-generalChatBtn.addEventListener('submit', (e) => {
+chatBtn.addEventListener('submit', (e) => {
   e.preventDefault();
+  const chatMessage = messageInput.value;
   const message = {
-    chatMessage: messageInput.value,
+    chatMessage,
     nickname,
   };
+  const currentPrivate = chattingWithElement.innerHTML
+  if(currentPrivate) {
+    const date = `${new Date().getUTCDate()}-${new Date().getMonth()}-${new Date().getFullYear()}`;
+    const time = new Date().toLocaleTimeString('pt-BR');
+    const message = `${date} ${time} - ${nickname}: ${chatMessage}`;
+    createChatMessage(message)
+    return socket.emit('private', { users: { receiver: currentPrivate, sender: nickname }, chatMessage });
+  } 
   socket.emit('message', message);
-  console.log(message)
   messageInput.value = '';
 });
 
 const private = document.getElementById('private-btn');
 
+socket.on('dm', (message) => createChatMessage(message, 'dm'));
 
 socket.on('message', (message) => createChatMessage(message));
 
@@ -156,6 +166,7 @@ socket.on('online', (users) => {
   console.log(users)
   const ul = document.createElement('ul');
   users.forEach(({ nickname, id }) => {
+    if(nickname !== nameHolder.innerText){
 
     const p = document.createElement('li');
     p.setAttribute('data-testid','online-user');
@@ -171,20 +182,21 @@ socket.on('online', (users) => {
       chattingWithElement.innerText = nickname;
       // clear pub_history and create private history
       messages.innerHTML = '';
-      socket.emit('getPVHistory', nickname)
+      socket.emit('get-pv-history', [nickname, nameHolder.innerHTML])
     }
-    btn.disabled = id !== socket.id
+    // btn.disabled = id !== socket.id
     li.appendChild(btn)
     ul.appendChild(li) 
+  }
+
   })
   usersOnlineElement.innerHTML = '';
   usersOnlineElement.appendChild(ul);
 })
 
-// socket.on('privateHistory', (history) =>{
-//   history.forEach(message => createChatMessage(message))
-// })
-/* socket.on('disconnect', () => nickname); */
+socket.on('privateHistory', (history) =>{
+  history.forEach(message => createChatMessage(message))
+})
     </script>
   </body>
 </html>

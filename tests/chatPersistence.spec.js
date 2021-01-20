@@ -114,7 +114,6 @@ describe('Elabore o histórico do chat para que as mensagens persistão', () => 
     await messageBox.type(chatMessage);
     const sendButton = await page.$('[data-testid=send-button]');
     await sendButton.click();
-    wait(1000);
 
     const response = await axios.get('http://localhost:3000/');
     const $ = cheerio.load(response.data);

@@ -1,8 +1,6 @@
-const usersOnline = [];
-
 const getGeneral = (db) => () => db.collection('messages').find().sort({ date: 1 }).toArray();
 
-const getPrivate = (db) => (users) => db.collection('messages').find({ users: { $all: users } }).sort({ date: 1 }).toArray();
+const getPrivate = (db) => (users) => db.collection('messages').findOne({ users: { $all: users } })/* .sort({ date: 1 }) */;
 
 const insertGeneral = (db) => ({ chatMessage, nickname, date }) => db.collection('messages').insertOne({ chatMessage, nickname, date })
   .then((value) => value.ops[0]);
@@ -36,8 +34,6 @@ const factory = (connect) => ({
   getPrivate: getPrivate(connect),
   insertGeneral: insertGeneral(connect),
   insertPrivate: insertPrivate(connect),
-  usersOnline,
-
 });
 
 module.exports = factory;
