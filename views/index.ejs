@@ -1,204 +1,276 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Socket.IO - trybe</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font: 13px Helvetica, Arial;
-      }
-      form {
-        background: #000;
-        padding: 3px;
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-      }
-      form input {
-        border: 0;
-        padding: 10px;
-        width: 90%;
-        margin-right: 0.5%;
-      }
-      form button {
-        width: 9%;
-        background: rgb(130, 224, 255);
-        border: none;
-        padding: 10px;
-        cursor: pointer;
-      }
-      #messagens {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-      }
-      #messagens li {
-        padding: 5px 10px;
-      }
-      #messagens li:nth-child(odd) {
-        background: #eee;
-      }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>
-  <body>
-    <div id='container'>
-    <div>
-      <h3 id='nickname'></h3>
-      <input type="text" id="nickname-input", data-testid="nickname-box">
-      <button 
-      type="button"  
-      data-testid="nickname-save"
-      id='sendButton'
-      > Save name
-    </button>
+<html lang="en">
+<head>
+  <title>Webchat</title>
+  <!-- <link rel="stylesheet" href="/assets/css/style.css"> -->
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font: 13px Helvetica, Arial;
+    }
+    .box-messages {
+      top: 52px;
+      overflow: auto;
+      position: fixed;
+      height: 53%;
+      width: 100%;
+    }
+    .box-user {
+      display: inline-flex;
+    }
+    #box-online-users {
+      background: rgb(164, 230, 252);
+      border: 2px solid black;
+      bottom: 95px;
+      height: 15%;
+      padding: 3px;
+      overflow: auto;
+      position: fixed;
+      width: 100%;
+    }
+    #nickname-user {
+      color: rgb(255, 255, 255);
+    }
+    form {
+      background: rgb(0, 0, 0);
+      bottom: 0;
+      padding: 3px;
+      position: fixed;
+      width: 100%;
+    }
+    form input {
+      border: 0;
+      border-bottom: 2px solid black;
+      margin-right: 0.5%;
+      padding: 10px;
+      width: 90%;
+    }
+    form button {
+      background: rgb(130, 224, 255);
+      border: none;
+      cursor: pointer;
+      padding: 10px;
+      width: 9%;
+    }
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+    #messages li {
+      padding: 5px 10px;
+    }
+    #messages li:nth-child( odd ) {
+      background: #eee;
+    }
+  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>
+  <!-- <script src="/socket.io/socket.io.js"></script> -->
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+</head>
+<body>
+  <h1>Projeto Webchat</h1>
+  <button id="btn-public-chat" data-testid="public" type="button">Public Chat</button>
+
+  <div id=chat>
+    <div class="box-messages" id="public-chat">
+      <ul id="messages">
+        <% messages && messages.forEach(message => { %>
+          <li>
+            <p data-testid="message"><%= message %></p>
+          </li>
+          <% }) %>
+      </ul>
+    </div>
   </div>
-  <button 
-    type="button"  
-    data-testid="public"
-    id='public-chat'
-    > Go to Public
-  </button>
-  <h3>Chating with: 
-    <h3 id='chat'></h3>
-  </h3>
-    <ul id='usersOnline'>
+
+  <div id="box-online-users">
+    Onlines Users:
+    <ul id="online-user">
       <% usersOnline && usersOnline.forEach(user => { %>
         <li>
           <p data-testid="online-user"><%= user.nickname %></p>
         </li>
-        <%  })%>
+        <%  })%></ul>
     </ul>
-    <ul id="messages">
-      <% messages && messages.forEach(message => { console.log(message) %>
-        <li>
-          <p data-testid="message"><%= message %></p>
-        </li>
-        <%  })%>
-    </ul>
+  </div>
+  <div>
     <form action="">
-      <input id="messageInput" autocomplete="off" data-testid="message-box" />
-      <button
-       data-testid="send-button" data-testid="public"
-       id="public-btn"
-      >Send</button>
+      <p id="nickname-user"></p>
+      <input type="text" id="nickname-box" data-testid="nickname-box"/><button type="button" id="nickname-save" data-testid="nickname-save">Save</button>
+      <input
+        id="mensagemInput"
+        autocomplete="off"
+        data-testid="message-box"
+      /><button type="submit" data-testid="send-button">Send</button>
     </form>
   </div>
-    <script>
+  <script>
+    // talvez colocar esse código no assets/js/script.js
+    let receiver;
+    let privateMsgs = [];
+    function pvChat(event) {
+      // console.log('private-chat');
+      // console.log('Id do client: ', event.target.previousSibling.id);
+      receiver = event.target.previousSibling.id;
 
-const messageInput = document.getElementById('messageInput');
-const messages = document.getElementById('messages');
-const sendButton = document.getElementById('sendButton');
-const nicknameElement = document.getElementById('nickname-input');
-const usersOnlineElement = document.getElementById('usersOnline');
-const chattingWithElement = document.getElementById('chat');
-
-const publicChatButton = document.getElementById('public-chat');
-
-const socket = io(); 
-
-publicChatButton.onclick = (message) => {
-  socket.emit('get-pub-history');
-}
-
-const createChatMessage = (message, dm) => {
-  const li = document.createElement('li');
-  const dmFlag = `(DM) ${message}`;
-  
-  li.setAttribute('data-testid', 'message');
-  li.innerHTML = `<p className='message'>${dm ?  dmFlag : message}</p>`;
-
-  messages.appendChild(li);
-};
-
-
-socket.on('history', (data) => {
-  messages.innerHTML = ''
-  data.forEach((message) => createChatMessage(message));
-});
-
-let nickname = `Guest ${Math.random().toString().split('.')[1]}`
-
-socket.emit('userConn', nickname)
-
-const nameHolder = document.querySelector('#nickname');
-nameHolder.innerHTML = nickname;
-
-sendButton.onclick = () => {
-  console.log('nicknameElement.value:', nicknameElement)
-  const oldNickname = nickname;
-  nickname = nicknameElement.value;
-  nameHolder.innerText = nicknameElement.value;
-  console.log('nickname:', nickname)
-  console.log('oldnickname:', oldNickname)
-  socket.emit('userChangeName', { nickname: oldNickname, newName: nickname })
-};
-
-const chatBtn = document.querySelector('form');
-
-chatBtn.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const chatMessage = messageInput.value;
-  const message = {
-    chatMessage,
-    nickname,
-  };
-  const currentPrivate = chattingWithElement.innerHTML;
-  if(currentPrivate) {
-    const date = `${new Date().getUTCDate()}-${new Date().getMonth()}-${new Date().getFullYear()}`;
-    const time = new Date().toLocaleTimeString('pt-BR');
-    const message = `${date} ${time} - ${nickname}: ${chatMessage}`;
-    createChatMessage(message)
-    return socket.emit('private', { users: { receiver: currentPrivate, sender: nickname }, chatMessage });
-  } 
-  socket.emit('message', message);
-  messageInput.value = '';
-});
-
-const private = document.getElementById('private-btn');
-
-socket.on('dm', (message) => createChatMessage(message, 'dm'));
-
-socket.on('message', (message) => createChatMessage(message));
-
-socket.on('online', (users) => {
-  console.log(users)
-  const ul = document.createElement('ul');
-  users.forEach(({ nickname, id }) => {
-    // if(nickname !== nameHolder.innerText){
-
-    const p = document.createElement('li');
-    p.setAttribute('data-testid','online-user');
-    p.innerText = nickname;
-    
-    const li = document.createElement('li');
-
-    li.appendChild(p);
-    const btn = document.createElement('button');
-    btn.setAttribute('data-testid', 'private');
-    btn.innerText = 'Chat with me';
-    btn.onclick = () => {
-      chattingWithElement.innerText = nickname;
-      // clear pub_history and create private history
-      messages.innerHTML = '';
-      socket.emit('get-pv-history', [nickname, nameHolder.innerHTML])
+      // fecha o chat público
+      $('#public-chat').remove();
+      $('#chat').empty();
+      // abre o chat publico
+      const privateChat = $('<div></div>')
+        .attr({
+          class: "box-messages",
+          id: "private-chat",
+        })
+        .append($('<ul></ul>').attr({ id: "messages" }));
+      $('#chat').append(privateChat);
+      // mensagens anteriores do chat privado
+      if (privateMsgs.length > 0) {
+        privateMsgs.forEach((msg) => {
+          $('#messages').append($('<li data-testid="message">').text(msg));
+        });
+      }
     }
-    // btn.disabled = id !== socket.id
-    li.appendChild(btn)
-    ul.appendChild(li) 
-  // }
+        
+    $(function () {
+      const socket = io('http://localhost:3000');
 
-  })
-  usersOnlineElement.innerHTML = '';
-  usersOnlineElement.appendChild(ul);
-})
+      // Envia nickname para o servidor
+      $('#nickname-save').click((function() {
+        const nickname = $('#nickname-box').val();
+        socket.emit('changeNickname', nickname);
+      }));
 
-socket.on('privateHistory', (history) =>{
-  history.forEach(message => createChatMessage(message))
-})
-    </script>
-  </body>
+      // Envia a mensagem para o servidor
+      $('form').submit(function(e) {
+        e.preventDefault();
+        const message = {
+          nickname: $('#nickname-box').val(),
+          chatMessage: $('#mensagemInput').val(),
+          receiver,
+        };
+
+        if($('#public-chat').length === 1) {
+          socket.emit('message', message);
+          // console.log('public -> open');
+        }
+
+        if($('#private-chat').length === 1) {
+          socket.emit('privateMessage', message);
+          // console.log('private -> open');
+          // console.log('receiver: ', receiver);
+        }
+        $('#mensagemInput').val('');
+        return false;
+      });
+
+      // Botão do chat público
+      $('#btn-public-chat').click(function() {
+        // console.log('public-chat');
+        // fecha o chat privado
+        $('#private-chat').remove();
+        $('#chat').empty();
+        // abre o chat publico
+        const publicChat = $('<div></div>')
+          .attr({
+            class: "box-messages",
+            id: "public-chat",
+          })
+          .append($('<ul></ul>').attr({ id: "messages" }));
+        $('#chat').append(publicChat);
+        socket.emit('publicChat');
+      });
+
+      // Eventos relacionados ao socket.
+      // Random Nickname quando entra no chat
+      socket.on('join', function(clients, randomNick, userId) {
+        if (socket.id === userId) $('#nickname-user').val(randomNick);
+
+        clients.forEach((client) => {
+          const listed = $(`#${client.userId}`);
+          if (listed.length === 0) {
+            const li = $('<li></li>')
+              .attr({
+                id: client.userId,
+                "data-testid": "online-user",
+              })
+              .text(client.nickname);
+
+            // btn - private chat
+            const btnPrivate = $('<button></button')
+              .attr({
+                type: "button",
+                id: "btn-private-chat",
+                "data-testid": "private",
+                onclick: "pvChat(event)",
+              })
+              .text('Private');
+
+            // boxLi - que será composta pela li e btnPrivate 
+            const boxLi = $('<div></div>')
+              .attr({
+                id: `box-${client.userId}`,
+                class: "box-user",
+              })
+              .append(li);
+
+            if (socket.id === client.userId) {
+              $('#online-user').prepend(boxLi);
+            } else {
+              boxLi.append(btnPrivate);
+              $('#online-user').append(boxLi);
+            }
+          }
+
+          if (socket.id === client.userId) {
+            $('#nickname-user').text(client.nickname);
+            // $('#nickname-box').val(client.nickname);
+          }
+        });
+      });
+
+      // Recebe as mensagens que estão no bando de dados.
+      socket.on('previousMessage', (previousMessage) => {
+        if (previousMessage) {
+          previousMessage.forEach(message => {
+            $('#messages').append($('<li data-testid="message">').text(message.chatMessage));
+          });
+        }
+      });
+
+      // Recebe as mensagens do servidor e coloca na tela
+      socket.on('message', function(message) {
+        $('#messages').append($('<li data-testid="message">').text(message));
+      });
+
+      // Recebe as mensagens privadas do servidor e coloca na tela
+      socket.on('privateMessage', function (message) {
+        privateMsgs.push(message);
+        $('#messages').append($('<li data-testid="message">').text(message));
+      });
+      // Recebe o nickname do servidor
+      // e coloca na lista #online-user
+      socket.on('listNicknameServer', function(nickname, userId) {
+        if (socket.id === userId) $('#nickname-user').text(nickname);
+        $(`#${userId}`).text(nickname);
+      });
+
+      // Cliente saiu do chat
+      socket.on('exit', function (userId) {
+        const client = $(`#${userId}`).text();
+        // const exitMsg = `${client} saiu do chat.`;
+        // $('#messages').append($('<li>').text(exitMsg));
+        $(`#box-${userId}`).remove();
+      });
+    });
+  </script>
+</body>
 </html>

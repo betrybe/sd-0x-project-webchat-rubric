@@ -1,69 +1,135 @@
-require('dotenv/config');
-const cors = require('cors');
-const path = require('path');
+// Server.js será como o index.js dos projetos anteriores
+
 const express = require('express');
-const socketIo = require('socket.io');
-
-const http = require('http');
-
-const getMessageController = require('./controllers/messageController');
-const getUserController = require('./controllers/userController');
-const getModels = require('./models/index');
-const connection = require('./models/connection');
 
 const app = express();
+const http = require('http');
+
+const socketIo = require('socket.io');
+
+const socketIoServer = http.createServer(app);
+
+const cors = require('cors');
+const path = require('path');
+
+const messagesModel = require('./models/messagesModel');
+
+const io = socketIo(socketIoServer, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  },
+});
+
+app.set('views', path.join(__dirname, './views'));
+
+app.set('view engine', 'ejs');
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cors());
 
-const httpServer = http.createServer(app);
-const io = socketIo(httpServer,
-  {
-    cors: {
-      origin: 'http://localhost:3000/',
-      methods: ['POST', 'GET'],
-    },
-  });
-const PORT = 3000;
+app.use('/assets', express.static(`${__dirname}/assets/`));
 
-const initSocket = (socket, models) => {
-  const userController = getUserController(io, socket, models.userModel);
-  const onlineUsers = models.userModel.getAllOnlineUsers();
-  const messageController = getMessageController(io, models.messageModel, socket, onlineUsers);
+let clients = [];
+app.get('/', async (req, res) => {
+  const getAll = await messagesModel.getAll();
+  const messages = await getAll.map(
+    ({ nickname, date, chatMessage }) => `${nickname} ${date} ${chatMessage}`,
+  );
+  console.log(getAll)
+  console.log(messages)
+  res.render('index', { usersOnline: clients, messages });
+  // res.sendFile(path.join(__dirname, '/views/index.ejs'));
+});
 
-  socket.on('get-pub-history', messageController.getHistory);
-  socket.on('get-pv-history', messageController.getPrivate);
-  socket.on('userChangeName', userController.updateName);
-  socket.on('userConn', userController.saveUser);
-  socket.on('usersOnline', models.userModel.getAllOnlineUsers);
-  socket.on('private', messageController.insertPrivate);
-  socket.on('message', messageController.sendMessage);
-  socket.on('disconnect', userController.removeUser);
-};
 
-async function start() {
-  const db = await connection();
-  const models = getModels(db);
+io.on('connect', async (socket) => {
+  console.log('Conectado');
 
-  io.on('connection', (socket) => {
-    initSocket(socket, models);
-  });
+  // histórico de mensagens
+  const previousMessage = await messagesModel.getAll();
+  // console.log('PREVIOUSMESSAGE: ', previousMessage);
+  io.emit('previousMessage', previousMessage);
 
-  app.set('views', path.join(__dirname, './views'));
+  // Random nickname
+  const randomNick = `Guest_${socket.id}`;
+  // const randomNick = '';
 
-  app.set('view engine', 'ejs');
+  clients.push({ userId: socket.id, nickname: randomNick });
+  console.log('CLIENTES: ', clients);
 
-  app.get('/', async (_req, res) => {
-    const usersOnline = models.userModel.getAllOnlineUsers();
-    const getAll = await models.messageModel.getGeneral();
-    const messages = await getAll.map(
-      ({ nickname, date, chatMessage }) => `${nickname} ${date} ${chatMessage}`,
-    );
-    res.render('index', { usersOnline, messages });
+  // console.log('RandomNick: ', randomNick);
+
+  io.emit('join', clients, randomNick, socket.id);
+  io.emit('listNicknameServer', randomNick, socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Desconectado: ', socket.id);
+    clients = clients.filter((client) => client.userId !== socket.id);
+    io.emit('exit', socket.id);
   });
 
-  httpServer.listen(PORT, () => console.log('HTTP listening on 3000'));
-}
+  socket.on('message', async (message) => {
+    const { chatMessage, nickname } = message;
+    const timestamp = new Date();
+    // DD-MM-yyyy
+    const dateMessage = `${timestamp.getDate()}-${timestamp.getMonth() + 1}-${timestamp.getFullYear()}`;
+    // HH:mm:ss
+    const timeMessage = `${timestamp.getHours()}:${timestamp.getMinutes()}:${timestamp.getSeconds()}`;
+    // DD-MM-yyyy HH:mm:ss - nickname: chatMessage
+    const formatedMessage = `${dateMessage} ${timeMessage} - ${nickname}: ${chatMessage}`;
 
-start().catch((err) => {
-  console.error(err);
-  process.exit(1);
+    // console.log(`Mensagem ${message}`);
+    // console.log('MESSAGE: ', nickname, chatMessage);
+    // console.log('FORMATEDMESSAGE: ', formatedMessage);
+
+    // Adiciona a mensagem no banco de dados.
+    const add = await messagesModel.add(nickname, formatedMessage, timeMessage);
+    console.log('ADD: ', add);
+    io.emit('message', formatedMessage);
+  });
+
+  // public chat
+  socket.on('publicChat', async () => {
+    const previousMessages = await messagesModel.getAll();
+    socket.emit('previousMessage', previousMessages);
+  });
+  // private message
+  // anotherSocketId -> destinatário (receiver)
+  // DD-MM-yyyy HH:mm:ss (private) - nickname: chatMessage
+  socket.on('privateMessage', (message) => {
+    const { chatMessage, nickname, receiver } = message;
+    const timestamp = new Date();
+    // DD-MM-yyyy
+    const dateMessage = `${timestamp.getDate()}-${timestamp.getMonth() + 1}-${timestamp.getFullYear()}`;
+    // HH:mm:ss
+    const timeMessage = `${timestamp.getHours()}:${timestamp.getMinutes()}:${timestamp.getSeconds()}`;
+    // DD-MM-yyyy HH:mm:ss (private) - nickname: chatMessage
+    const formatedMessage = `${dateMessage} ${timeMessage} (private) - ${nickname}: ${chatMessage}`;
+    // socket.to(receiver).emit('privateMessage', socket.id, formatedMessage);
+    socket.to(receiver).emit('privateMessage', formatedMessage);
+    socket.emit('privateMessage', formatedMessage);
+
+    // Funciona, mas acho que está errado.
+    io.emit('privateMessage', formatedMessage);
+  });
+  // --- private message ---
+
+  socket.on('changeNickname', (nickname) => {
+    clients = clients.map((client) => {
+      if (client.userId === socket.id) {
+        const clientNewNick = client;
+        clientNewNick.nickname = nickname;
+      }
+      return client;
+    });
+    io.emit('listNicknameServer', nickname, socket.id);
+  });
+
+  socket.broadcast.emit('listNicknameServer');
+});
+
+socketIoServer.listen(3000, () => {
+  console.log('socketIoServer - Servidor ouvindo na porta 3000');
 });

@@ -1,12 +1,12 @@
-const mongoClient = require('mongodb').MongoClient;
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 let schema = null;
 
-const connection = () => {
+async function connection() {
   if (schema) return Promise.resolve(schema);
-  return mongoClient
-    .connect(process.env.DB_URL, {
+  return MongoClient
+    .connect(process.env.DB_URL || 'mongodb://localhost:27017/webchat', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
@@ -19,5 +19,5 @@ const connection = () => {
       console.error(err);
       process.exit(1);
     });
-};
+}
 module.exports = connection;
