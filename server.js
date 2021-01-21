@@ -37,12 +37,9 @@ app.get('/', async (req, res) => {
   const messages = await getAll.map(
     ({ nickname, date, chatMessage }) => `${nickname} ${date} ${chatMessage}`,
   );
-  console.log(getAll)
-  console.log(messages)
   res.render('index', { usersOnline: clients, messages });
   // res.sendFile(path.join(__dirname, '/views/index.ejs'));
 });
-
 
 io.on('connect', async (socket) => {
   console.log('Conectado');
