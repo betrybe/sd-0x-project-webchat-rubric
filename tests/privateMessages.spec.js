@@ -69,9 +69,7 @@ describe('Permita que usuários troquem mensagens particulares', () => {
     await page.bringToFront();
     await page.waitForSelector(dataTestid('private'));
     let privButtons = await page.$$(dataTestid('private'));
-    // const privateButton = await page.$(dataTestid('private'));
     wait(10000);
-
     await _.last(privButtons).click();
 
     await page.waitForSelector(dataTestid('message-box'));
