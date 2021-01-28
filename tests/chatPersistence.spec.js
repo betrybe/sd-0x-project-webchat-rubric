@@ -1,6 +1,3 @@
-/**
- * @jest-environment node
- */
 const cheerio = require('cheerio');
 const axios = require('axios');
 require('dotenv').config();
@@ -105,7 +102,7 @@ describe('Elabore o histórico do chat para que as mensagens persistão', () => 
 
     const response = await axios.get('http://localhost:3000/');
     const $ = cheerio.load(response.data);
-    const message = $('[data-testid="message"]').html();
+    const message = $('[data-testid="message"]').html()
     expect(message.includes(nickname)).toBeTruthy();
     expect(message.includes(chatMessage)).toBeTruthy();
   });

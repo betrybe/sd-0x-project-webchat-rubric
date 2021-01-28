@@ -1,6 +1,3 @@
-/**
- * @jest-environment node
- */
 require('dotenv').config();
 
 const cheerio = require('cheerio');
