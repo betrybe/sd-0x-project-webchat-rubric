@@ -45,7 +45,7 @@ window.onload = () => {
       const inputNewNickname = document.querySelector('input[data-testid="nickname-box"]');
 
       if (inputNewNickname.value !== '') {
-        document.querySelectorAll('small[data-testid="online-user"]')[0].innerHTML = inputNewNickname.value
+        document.querySelectorAll('small[data-testid="online-user"]')[0].innerHTML = inputNewNickname.value;
         clientSocketIo.emit('changeNick', inputNewNickname.value);
         inputNewNickname.value = '';
       }
@@ -104,8 +104,9 @@ window.onload = () => {
   clientSocketIo.on('updateNickUser', ({ newNickname, oldNickname }) => {
     document.querySelectorAll('small[data-testid="online-user"]').forEach((user) => {
       if (user.innerText === oldNickname) {
-        user.innerText = newNickname;
+        const teste = user;
+        teste.innerText = newNickname;
       }
     });
   });
-}
+};

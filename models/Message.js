@@ -1,7 +1,7 @@
 const moment = require('moment');
 const conn = require('./connection');
 
-const  save = async({ chatMessage, nickname }) => {
+const save = async ({ chatMessage, nickname }) => {
   try {
     const date = moment().format('DD-MM-yyyy HH:mm:ss A');
     const db = await conn();
@@ -11,7 +11,7 @@ const  save = async({ chatMessage, nickname }) => {
   } catch (error) {
     return null;
   }
-}
+};
 
 async function getAll() {
   try {

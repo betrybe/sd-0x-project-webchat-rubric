@@ -23,17 +23,13 @@ app.set('views', './views');
 
 app.get('/', messageControler.getAllMessages);
 
-const initSocket = (currentSocket) => {
-  currentSocket.user = { nickname: faker.name.firstName() };
-
-  helpers.addNewUserInMemory(currentSocket.user);
-  currentSocket.emit('myNickname', { myNickname: currentSocket.user.nickname, peopleOnline: helpers.getUsersInMemory() });
-  currentSocket.broadcast.emit('newUser', currentSocket.user.nickname);
-}
-
 io.on('connection', (socket) => {
-  
-  initSocket(socket);
+  const nickname = faker.name.firstName();
+  // socket.user = { nickname: faker.name.firstName() };
+
+  helpers.addNewUserInMemory(nickname);
+  socket.emit('myNickname', { myNickname: nickname, peopleOnline: helpers.getUsersInMemory() });
+  socket.broadcast.emit('newUser', nickname);
 
   socket.on('message', async (data) => {
     try {
@@ -46,13 +42,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('changeNick', (newNickname) => {
-    socket.broadcast.emit('updateNickUser', { newNickname, oldNickname: socket.user.nickname})
-    socket.user.nickname = newNickname;
+    socket.broadcast.emit('updateNickUser', { newNickname, oldNickname: nickname });
+    nickname.nickname = newNickname;
   });
 
   socket.on('disconnect', () => {
-    helpers.removeUserInMemory(socket.user);
-    socket.broadcast.emit('offline', socket.user.nickname);
+    helpers.removeUserInMemory(nickname);
+    socket.broadcast.emit('offline', nickname);
   });
 });
 
