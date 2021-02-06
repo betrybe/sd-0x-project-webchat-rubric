@@ -1,0 +1,17 @@
+html , body , div , span , h1 , h2 , h3 , p , a , small , ol , ul , li , form {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+label , table , tbody , tfoot , thead , tr , th , td , article , aside {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+footer , header , menu , nav , section {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}

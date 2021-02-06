@@ -1,0 +1,9 @@
+<article class="is-flex is-flex-direction-column is-justify-content-flex-end mx-3">
+  <% messages.forEach(({ date, nickname, chatMessage }) => { %>
+    <div class="notification has-background-black-ter has-text-grey-lighter is-flex is-flex-direction-column" data-testid="message">
+      <small class="datetime has-background-black p-1"><%= date %></small>
+      <small class="has-text-weight-bold"><%= nickname %></small>
+      <p><%= chatMessage %></p>
+    </div>
+  <% }); %>
+</article>
